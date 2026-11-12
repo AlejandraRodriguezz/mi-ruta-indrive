@@ -50,15 +50,19 @@ input:focus,textarea:focus{outline:2px solid #b8e4d0;border-color:var(--green)}
  <div class="hero">
   <div class="label">Ganancia neta registrada este mes</div>
   <div class="amount" id="monthNet">$0</div>
-  <div class="hint">Ingresos menos comisión, gasolina y otros gastos registrados</div>
+  <div class="hint">Ingresos menos comisión, gasolina, desgaste y otros gastos</div>
   <div class="progress"><div class="bar" id="goalBar"></div></div>
   <div class="hint" id="goalText">Define tu meta mensual en Ajustes</div>
  </div>
  <div class="grid">
   <div class="card metric"><div class="label">Ingresos brutos</div><div class="value" id="monthGross">$0</div><div class="note">Antes de descuentos</div></div>
-  <div class="card metric"><div class="label">Gastos registrados</div><div class="value" id="monthCosts">$0</div><div class="note">Comisión + operación</div></div>
+  <div class="card metric"><div class="label">Gastos registrados</div><div class="value" id="monthCosts">$0</div><div class="note">Comisión + gasolina + desgaste + otros</div></div>
+  <div class="card metric"><div class="label">Gasolina</div><div class="value" id="monthFuel">$0</div><div class="note">En el mes actual</div></div>
+  <div class="card metric"><div class="label">Desgaste</div><div class="value" id="monthWear">$0</div><div class="note">Estimado por km</div></div>
   <div class="card metric"><div class="label">Horas trabajadas</div><div class="value" id="monthHours">0 h</div><div class="note">En el mes actual</div></div>
   <div class="card metric"><div class="label">Kilómetros</div><div class="value" id="monthKm">0 km</div><div class="note">En el mes actual</div></div>
+  <div class="card metric"><div class="label">Gasto promedio por día</div><div class="value" id="monthAvgDay">$0</div><div class="note" id="avgNote">Gastos ÷ días trabajados</div></div>
+  <div class="card metric"><div class="label">Costo por km</div><div class="value" id="monthPerKm">$0</div><div class="note">Gastos ÷ kilómetros</div></div>
  </div>
  <h2>Tu meta financiera</h2>
  <div class="card">
@@ -78,6 +82,9 @@ input:focus,textarea:focus{outline:2px solid #b8e4d0;border-color:var(--green)}
   <form id="entryForm">
    <div class="formgrid">
     <div class="wide"><label for="date">Fecha</label><input id="date" type="date" required></div>
+    <div><label for="odoStart">Odómetro inicial (km)</label><input id="odoStart" type="number" min="0" step="1" inputmode="numeric" placeholder="Opcional"></div>
+    <div><label for="odoEnd">Odómetro final (km)</label><input id="odoEnd" type="number" min="0" step="1" inputmode="numeric" placeholder="Opcional"></div>
+    <div class="wide small muted" style="margin-top:-2px">Si llenas el odómetro, los kilómetros y el desgaste se calculan solos. Si no, escribe los km a mano.</div>
     <div><label for="hours">Horas trabajadas</label><input id="hours" type="number" min="0" max="24" step=".25" placeholder="Ej. 2.5" required></div>
     <div><label for="km">Kilómetros recorridos</label><input id="km" type="number" min="0" step=".1" placeholder="Ej. 45"></div>
     <div class="wide"><label for="gross">Ingresos brutos del día ($)</label><input id="gross" type="number" min="0" step="100" placeholder="Ej. 85000" required></div>
@@ -85,12 +92,13 @@ input:focus,textarea:focus{outline:2px solid #b8e4d0;border-color:var(--green)}
     <div><label for="fuel">Gasolina consumida ($)</label><input id="fuel" type="number" min="0" step="100" placeholder="Ej. 25000"></div>
     <div><label for="other">Otros gastos ($)</label><input id="other" type="number" min="0" step="100" value="0"></div>
     <div><label for="parking">Peajes/parqueadero ($)</label><input id="parking" type="number" min="0" step="100" value="0"></div>
+    <div class="wide"><label for="wear">Desgaste del vehículo ($)</label><input id="wear" type="number" min="0" step="1" value="0"><div class="small muted" style="margin-top:4px">Se calcula con los km y el valor por km de Ajustes. Puedes corregirlo a mano.</div></div>
     <div class="wide"><label for="notes">Notas (opcional)</label><textarea id="notes" rows="2" placeholder="Zona, horario, novedades..."></textarea></div>
    </div>
    <div class="card" style="background:#f3f8f5;margin-top:14px;box-shadow:none">
     <div class="muted small">Ganancia neta estimada de esta jornada</div>
     <div class="amount" style="font-size:25px;font-weight:800;margin-top:4px" id="preview">$0</div>
-    <div class="small muted">Ingresos − comisión − gasolina − otros gastos − peajes/parqueadero</div>
+    <div class="small muted">Ingresos − comisión − gasolina − desgaste − otros gastos − peajes/parqueadero</div>
    </div>
    <div class="formbuttons"><button type="button" class="ghost" onclick="showView('dashboard')">Cancelar</button><button class="primary" type="submit">Guardar jornada</button></div>
   </form>
@@ -114,6 +122,8 @@ input:focus,textarea:focus{outline:2px solid #b8e4d0;border-color:var(--green)}
   <label for="sDebt">Deuda total pendiente ($)</label><input id="sDebt" type="number">
   <label for="sSaving">Ahorro mensual deseado ($)</label><input id="sSaving" type="number">
   <label for="sGoal">Meta de facturación mensual ($)</label><input id="sGoal" type="number">
+  <label for="sWear">Desgaste estimado por kilómetro ($/km)</label><input id="sWear" type="number" min="0" step=".1" inputmode="decimal">
+  <p class="small muted">Cuánto cuesta el desgaste de cada km: suma lo que gastas en aceite, llantas, frenos y mantenimiento y divídelo entre los km que duran. Ej.: aceite $120.000 cada 5.000 km = $24/km; llantas $1.200.000 cada 50.000 km = $24/km. Sumados: $48 por km.</p>
   <div class="formbuttons"><button class="primary" onclick="saveSettings()">Guardar ajustes</button></div>
  </div>
  <h2>Datos y privacidad</h2>
@@ -131,7 +141,7 @@ input:focus,textarea:focus{outline:2px solid #b8e4d0;border-color:var(--green)}
 </nav>
 <script>
 const KEY='miruta_records_v1', SKEY='miruta_settings_v1';
-const defaults={personal:0,installments:0,debt:0,saving:0,goal:0};
+const defaults={personal:0,installments:0,debt:0,saving:0,goal:0,wear:0};
 let records=JSON.parse(localStorage.getItem(KEY)||'[]');
 let settings={...defaults,...JSON.parse(localStorage.getItem(SKEY)||'{}')};
 const $=id=>document.getElementById(id);
@@ -140,27 +150,32 @@ const num=id=>Number($(id).value)||0;
 const today=new Date(); const iso=d=>{let x=new Date(d.getTime()-d.getTimezoneOffset()*60000);return x.toISOString().slice(0,10)};
 $('todayLabel').textContent=today.toLocaleDateString('es-CO',{day:'numeric',month:'short',year:'numeric'});
 $('date').value=iso(today);
-function net(r){return r.gross-r.commission-r.fuel-r.other-r.parking}
-function showView(v){document.querySelectorAll('.view').forEach(x=>x.classList.toggle('active',x.id===v));document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('active',x.dataset.view===v));if(v==='dashboard')renderDashboard();if(v==='history')renderHistory();if(v==='settings')loadSettings();window.scrollTo(0,0)}
+function net(r){return r.gross-r.commission-r.fuel-r.other-r.parking-(Number(r.wear)||0)}
+function cost(r){return r.commission+r.fuel+r.other+r.parking+(Number(r.wear)||0)}
+function showView(v){document.querySelectorAll('.view').forEach(x=>x.classList.toggle('active',x.id===v));document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('active',x.dataset.view===v));if(v==='dashboard')renderDashboard();if(v==='history')renderHistory();if(v==='settings')loadSettings();if(v==='add'&&!$('odoStart').value)$('odoStart').value=lastOdo();window.scrollTo(0,0)}
 function monthRecords(){let m=iso(today).slice(0,7);return records.filter(r=>r.date.startsWith(m))}
 function renderDashboard(){
- let a=monthRecords(),sum=k=>a.reduce((s,r)=>s+(Number(r[k])||0),0),gross=sum('gross'),cost=sum('commission')+sum('fuel')+sum('other')+sum('parking'),hours=sum('hours'),km=sum('km'),n=gross-cost;
- $('monthNet').textContent=money(n);$('monthGross').textContent=money(gross);$('monthCosts').textContent=money(cost);$('monthHours').textContent=hours.toLocaleString('es-CO')+' h';$('monthKm').textContent=km.toLocaleString('es-CO')+' km';
+ let a=monthRecords(),sum=k=>a.reduce((s,r)=>s+(Number(r[k])||0),0),gross=sum('gross'),cost=sum('commission')+sum('fuel')+sum('other')+sum('parking')+sum('wear'),hours=sum('hours'),km=sum('km'),n=gross-cost,days=new Set(a.map(r=>r.date)).size;
+ $('monthNet').textContent=money(n);$('monthGross').textContent=money(gross);$('monthCosts').textContent=money(cost);$('monthFuel').textContent=money(sum('fuel'));$('monthWear').textContent=money(sum('wear'));$('monthAvgDay').textContent=money(days?cost/days:0);$('avgNote').textContent='Gastos ÷ '+days+(days===1?' día trabajado':' días trabajados');$('monthPerKm').textContent=money(km?cost/km:0);$('monthHours').textContent=hours.toLocaleString('es-CO')+' h';$('monthKm').textContent=km.toLocaleString('es-CO')+' km';
  $('goalBar').style.width=settings.goal?Math.min(100,gross/settings.goal*100)+'%':'0%';$('goalText').textContent=settings.goal?money(gross)+' de '+money(settings.goal)+' de facturación':'Define tu meta mensual en Ajustes';
  $('personal').textContent=money(settings.personal);$('debt').textContent=money(settings.installments);$('saving').textContent=money(settings.saving);$('totalDebt').textContent=money(settings.debt);
 }
-function updatePreview(){let v=num('gross')-num('commission')-num('fuel')-num('other')-num('parking');$('preview').textContent=money(v)}
-['gross','commission','fuel','other','parking'].forEach(id=>$(id).addEventListener('input',updatePreview));
-$('entryForm').addEventListener('submit',e=>{e.preventDefault();let r={id:Date.now(),date:$('date').value,hours:num('hours'),km:num('km'),gross:num('gross'),commission:num('commission'),fuel:num('fuel'),other:num('other'),parking:num('parking'),notes:$('notes').value.trim()};records.push(r);saveRecords();$('entryForm').reset();$('date').value=iso(new Date());$('commission').value=0;$('other').value=0;$('parking').value=0;updatePreview();showView('dashboard');alert('Jornada guardada. ¡Buen trabajo!')});
+function lastOdo(){let a=records.filter(r=>Number(r.odoEnd)>0).sort((x,y)=>x.date.localeCompare(y.date)||x.id-y.id);return a.length?a[a.length-1].odoEnd:''}
+function calcWear(){$('wear').value=Math.round(num('km')*(settings.wear||0));updatePreview()}
+function calcKm(){let s=num('odoStart'),e=num('odoEnd');if(s>0&&e>=s){$('km').value=Math.round((e-s)*10)/10;calcWear()}}
+$('odoStart').addEventListener('input',calcKm);$('odoEnd').addEventListener('input',calcKm);$('km').addEventListener('input',calcWear);
+function updatePreview(){let v=num('gross')-num('commission')-num('fuel')-num('other')-num('parking')-num('wear');$('preview').textContent=money(v)}
+['gross','commission','fuel','other','parking','wear'].forEach(id=>$(id).addEventListener('input',updatePreview));
+$('entryForm').addEventListener('submit',e=>{e.preventDefault();let r={id:Date.now(),date:$('date').value,hours:num('hours'),km:num('km'),gross:num('gross'),commission:num('commission'),fuel:num('fuel'),other:num('other'),parking:num('parking'),wear:num('wear'),odoStart:num('odoStart'),odoEnd:num('odoEnd'),notes:$('notes').value.trim()};records.push(r);saveRecords();$('entryForm').reset();$('date').value=iso(new Date());$('commission').value=0;$('other').value=0;$('parking').value=0;$('wear').value=0;updatePreview();showView('dashboard');alert('Jornada guardada. ¡Buen trabajo!')});
 function saveRecords(){localStorage.setItem(KEY,JSON.stringify(records))}
 function renderHistory(){let el=$('recordsList');if(!records.length){el.innerHTML='<div class="empty">Todavía no tienes jornadas registradas.<br>Usa “Registrar” para comenzar.</div>';return}
- el.innerHTML=[...records].sort((a,b)=>b.date.localeCompare(a.date)).map(r=>`<div class="record"><div><strong>${new Date(r.date+'T12:00:00').toLocaleDateString('es-CO',{day:'numeric',month:'short',year:'numeric'})}</strong><div class="tag">${r.hours} h · ${r.km} km · Gasolina ${money(r.fuel)}</div>${r.notes?`<div class="tag">${escapeHTML(r.notes)}</div>`:''}</div><div class="right">${money(net(r))}<div class="tag">Neto</div><button class="danger" style="padding:5px 8px;margin-top:5px;font-size:11px" onclick="deleteRecord(${r.id})">Eliminar</button></div></div>`).join('');
+ el.innerHTML=[...records].sort((a,b)=>b.date.localeCompare(a.date)).map(r=>`<div class="record"><div><strong>${new Date(r.date+'T12:00:00').toLocaleDateString('es-CO',{day:'numeric',month:'short',year:'numeric'})}</strong><div class="tag">${r.hours} h · ${r.km} km · Gasolina ${money(r.fuel)} · Desgaste ${money(r.wear||0)}</div><div class="tag">Gastos del día ${money(cost(r))}${r.km?' · '+money(cost(r)/r.km)+'/km':''}</div>${r.notes?`<div class="tag">${escapeHTML(r.notes)}</div>`:''}</div><div class="right">${money(net(r))}<div class="tag">Neto</div><button class="danger" style="padding:5px 8px;margin-top:5px;font-size:11px" onclick="deleteRecord(${r.id})">Eliminar</button></div></div>`).join('');
 }
 function escapeHTML(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function deleteRecord(id){if(confirm('¿Eliminar esta jornada?')){records=records.filter(r=>r.id!==id);saveRecords();renderHistory();renderDashboard()}}
-function saveSettings(){settings={personal:num('sPersonal'),installments:num('sInstallments'),debt:num('sDebt'),saving:num('sSaving'),goal:num('sGoal')};localStorage.setItem(SKEY,JSON.stringify(settings));renderDashboard();alert('Ajustes guardados.')}
-function loadSettings(){ $('sPersonal').value=settings.personal;$('sInstallments').value=settings.installments;$('sDebt').value=settings.debt;$('sSaving').value=settings.saving;$('sGoal').value=settings.goal}
-function exportCSV(){let rows=[['Fecha','Horas','Km','Ingresos brutos','Comisión','Gasolina','Otros gastos','Peajes/parqueadero','Ganancia neta','Notas'],...records.map(r=>[r.date,r.hours,r.km,r.gross,r.commission,r.fuel,r.other,r.parking,net(r),r.notes])];let csv='\ufeff'+rows.map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(';')).join('\n');download(csv,'mi-ruta-registros.csv','text/csv;charset=utf-8')}
+function saveSettings(){settings={personal:num('sPersonal'),installments:num('sInstallments'),debt:num('sDebt'),saving:num('sSaving'),goal:num('sGoal'),wear:num('sWear')};localStorage.setItem(SKEY,JSON.stringify(settings));renderDashboard();alert('Ajustes guardados.')}
+function loadSettings(){ $('sPersonal').value=settings.personal;$('sInstallments').value=settings.installments;$('sDebt').value=settings.debt;$('sSaving').value=settings.saving;$('sGoal').value=settings.goal;$('sWear').value=settings.wear}
+function exportCSV(){let rows=[['Fecha','Horas','Km','Odómetro inicial','Odómetro final','Ingresos brutos','Comisión','Gasolina','Desgaste','Otros gastos','Peajes/parqueadero','Gastos totales','Ganancia neta','Notas'],...records.map(r=>[r.date,r.hours,r.km,r.odoStart||'',r.odoEnd||'',r.gross,r.commission,r.fuel,r.wear||0,r.other,r.parking,cost(r),net(r),r.notes])];let csv='\ufeff'+rows.map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(';')).join('\n');download(csv,'mi-ruta-registros.csv','text/csv;charset=utf-8')}
 function exportBackup(){download(JSON.stringify({records,settings},null,2),'mi-ruta-copia.json','application/json')}
 function download(data,name,type){let a=document.createElement('a'),url=URL.createObjectURL(new Blob([data],{type}));a.href=url;a.download=name;a.click();URL.revokeObjectURL(url)}
 $('restoreFile').addEventListener('change',async e=>{let f=e.target.files[0];if(!f)return;try{let d=JSON.parse(await f.text());if(!Array.isArray(d.records))throw 0;if(confirm('Esto reemplazará los registros actuales. ¿Continuar?')){records=d.records.map((r,i)=>({...r,id:Number(r.id)||Date.now()+i}));settings={...defaults,...(d.settings||{})};saveRecords();localStorage.setItem(SKEY,JSON.stringify(settings));renderHistory();renderDashboard();loadSettings();alert('Copia restaurada.')}}catch{alert('No se pudo leer esa copia.')}e.target.value=''});
