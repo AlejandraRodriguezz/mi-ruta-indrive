@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#10231f">
+<meta name="description" content="Control personal de jornadas, ingresos y gastos de conducción">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>Mi Ruta · Control InDrive</title>
+<style>
+:root{--bg:#f3f6f4;--card:#fff;--ink:#172522;--muted:#687873;--green:#147d58;--green2:#e1f3eb;--line:#e3eae6;--red:#b74747;--shadow:0 8px 28px #18352a0c}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding-bottom:calc(82px + env(safe-area-inset-bottom))}
+header{background:#10231f;color:white;padding:22px 18px 24px;border-radius:0 0 24px 24px}
+.headrow{display:flex;justify-content:space-between;align-items:center}.brand{font-size:20px;font-weight:800;letter-spacing:-.5px}.sub{font-size:12px;color:#c5d5cf;margin-top:4px}.period{font-size:12px;color:#d5e4dd}
+main{max-width:720px;margin:auto;padding:16px}
+h2{font-size:18px;margin:20px 0 12px;letter-spacing:-.3px}.muted{color:var(--muted)}.small{font-size:12px}
+.hero{margin-top:-8px;background:#183b31;color:white;border-radius:18px;padding:17px;box-shadow:var(--shadow)}
+.hero .label{font-size:12px;color:#c9ded4}.hero .amount{font-size:32px;font-weight:800;margin:5px 0}.hero .hint{font-size:12px;color:#c9ded4}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:var(--shadow)}
+.metric .label{font-size:12px;color:var(--muted)}.metric .value{font-size:20px;font-weight:750;margin-top:5px}.metric .note{font-size:11px;color:var(--muted);margin-top:3px}
+.progress{height:9px;background:#e6eee9;border-radius:99px;overflow:hidden;margin:10px 0 5px}.bar{height:100%;background:#48b889;width:0;border-radius:99px}
+button,.btn{border:0;border-radius:12px;padding:13px 15px;font:inherit;font-weight:700;cursor:pointer}
+.primary{background:var(--green);color:white}.secondary{background:var(--green2);color:#126344}.ghost{background:#f0f4f2;color:#34463f}.danger{background:#fff0ef;color:var(--red)}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}
+nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);padding:8px 8px calc(8px + env(safe-area-inset-bottom));z-index:4}
+nav button{background:transparent;color:#687873;padding:8px 4px;font-size:12px}nav button.active{color:var(--green);background:#eaf5ef}
+.view{display:none}.view.active{display:block}
+label{display:block;font-size:12px;color:var(--muted);font-weight:650;margin:11px 0 5px}
+input,textarea{width:100%;border:1px solid #d8e2dc;border-radius:11px;padding:12px;font:inherit;background:#fff;color:var(--ink);min-height:45px}
+input:focus,textarea:focus{outline:2px solid #b8e4d0;border-color:var(--green)}
+.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.wide{grid-column:1/-1}
+.formbuttons{display:flex;gap:9px;margin-top:16px}.formbuttons button{flex:1}
+.record{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}.record:last-child{border:0}
+.record strong{display:block}.record .right{text-align:right;font-weight:750}.tag{font-size:11px;color:var(--muted)}
+.notice{background:#fff8e8;border:1px solid #f2e2b9;padding:12px;border-radius:12px;font-size:12px;color:#715b2d;line-height:1.45}
+.empty{text-align:center;padding:24px 10px;color:var(--muted);font-size:13px}
+.hidden{display:none!important}
+@media(min-width:600px){main{padding:22px}.hero .amount{font-size:38px}}
+</style>
+</head>
+<body>
+<header>
+ <div class="headrow"><div><div class="brand">↗ Mi Ruta</div><div class="sub">Control personal de conducción</div></div><div class="period" id="todayLabel"></div></div>
+</header>
+<main>
+<section id="dashboard" class="view active">
+ <div class="hero">
+  <div class="label">Ganancia neta registrada este mes</div>
+  <div class="amount" id="monthNet">$0</div>
+  <div class="hint">Ingresos menos comisión, gasolina y otros gastos registrados</div>
+  <div class="progress"><div class="bar" id="goalBar"></div></div>
+  <div class="hint" id="goalText">Define tu meta mensual en Ajustes</div>
+ </div>
+ <div class="grid">
+  <div class="card metric"><div class="label">Ingresos brutos</div><div class="value" id="monthGross">$0</div><div class="note">Antes de descuentos</div></div>
+  <div class="card metric"><div class="label">Gastos registrados</div><div class="value" id="monthCosts">$0</div><div class="note">Comisión + operación</div></div>
+  <div class="card metric"><div class="label">Horas trabajadas</div><div class="value" id="monthHours">0 h</div><div class="note">En el mes actual</div></div>
+  <div class="card metric"><div class="label">Kilómetros</div><div class="value" id="monthKm">0 km</div><div class="note">En el mes actual</div></div>
+ </div>
+ <h2>Tu meta financiera</h2>
+ <div class="card">
+  <div class="record"><span class="muted">Gastos personales</span><strong id="personal">$0</strong></div>
+  <div class="record"><span class="muted">Cuotas de deudas</span><strong id="debt">$0</strong></div>
+  <div class="record"><span class="muted">Ahorro deseado</span><strong id="saving">$0</strong></div>
+  <div class="record"><span class="muted">Deuda total pendiente</span><strong id="totalDebt">$0</strong></div>
+  <p class="small muted">Estos valores son tu plan de referencia; puedes cambiarlos en Ajustes.</p>
+ </div>
+ <div class="actions"><button class="primary" onclick="showView('add')">＋ Registrar jornada</button><button class="secondary" onclick="showView('history')">Ver historial</button></div>
+ <div class="notice">Tus registros se guardan en este dispositivo. Exporta una copia de seguridad periódicamente para no perderlos si cambias de celular o borras los datos del navegador.</div>
+</section>
+
+<section id="add" class="view">
+ <h2>Registrar jornada</h2>
+ <div class="card">
+  <form id="entryForm">
+   <div class="formgrid">
+    <div class="wide"><label for="date">Fecha</label><input id="date" type="date" required></div>
+    <div><label for="hours">Horas trabajadas</label><input id="hours" type="number" min="0" max="24" step=".25" placeholder="Ej. 2.5" required></div>
+    <div><label for="km">Kilómetros recorridos</label><input id="km" type="number" min="0" step=".1" placeholder="Ej. 45"></div>
+    <div class="wide"><label for="gross">Ingresos brutos del día ($)</label><input id="gross" type="number" min="0" step="100" placeholder="Ej. 85000" required></div>
+    <div><label for="commission">Comisión plataforma ($)</label><input id="commission" type="number" min="0" step="100" value="0"></div>
+    <div><label for="fuel">Gasolina consumida ($)</label><input id="fuel" type="number" min="0" step="100" placeholder="Ej. 25000"></div>
+    <div><label for="other">Otros gastos ($)</label><input id="other" type="number" min="0" step="100" value="0"></div>
+    <div><label for="parking">Peajes/parqueadero ($)</label><input id="parking" type="number" min="0" step="100" value="0"></div>
+    <div class="wide"><label for="notes">Notas (opcional)</label><textarea id="notes" rows="2" placeholder="Zona, horario, novedades..."></textarea></div>
+   </div>
+   <div class="card" style="background:#f3f8f5;margin-top:14px;box-shadow:none">
+    <div class="muted small">Ganancia neta estimada de esta jornada</div>
+    <div class="amount" style="font-size:25px;font-weight:800;margin-top:4px" id="preview">$0</div>
+    <div class="small muted">Ingresos − comisión − gasolina − otros gastos − peajes/parqueadero</div>
+   </div>
+   <div class="formbuttons"><button type="button" class="ghost" onclick="showView('dashboard')">Cancelar</button><button class="primary" type="submit">Guardar jornada</button></div>
+  </form>
+ </div>
+</section>
+
+<section id="history" class="view">
+ <h2>Historial de jornadas</h2>
+ <div class="card">
+  <div id="recordsList"></div>
+  <div class="actions"><button class="secondary" onclick="exportCSV()">Exportar CSV</button><button class="ghost" onclick="exportBackup()">Copia JSON</button></div>
+  <label for="restoreFile">Restaurar copia JSON</label><input id="restoreFile" type="file" accept="application/json">
+ </div>
+</section>
+
+<section id="settings" class="view">
+ <h2>Ajustes de tu plan</h2>
+ <div class="card">
+  <label for="sPersonal">Gastos personales mensuales ($)</label><input id="sPersonal" type="number">
+  <label for="sInstallments">Cuotas mensuales de deudas ($)</label><input id="sInstallments" type="number">
+  <label for="sDebt">Deuda total pendiente ($)</label><input id="sDebt" type="number">
+  <label for="sSaving">Ahorro mensual deseado ($)</label><input id="sSaving" type="number">
+  <label for="sGoal">Meta de facturación mensual ($)</label><input id="sGoal" type="number">
+  <div class="formbuttons"><button class="primary" onclick="saveSettings()">Guardar ajustes</button></div>
+ </div>
+ <h2>Datos y privacidad</h2>
+ <div class="card">
+  <p class="small muted">La app guarda la información localmente en el almacenamiento del navegador de este dispositivo. No tiene cuenta ni sincronización en la nube. Si borras los datos del navegador, puedes perder los registros.</p>
+  <button class="danger" onclick="clearAll()">Borrar todos los registros</button>
+ </div>
+</section>
+</main>
+<nav>
+ <button class="active" data-view="dashboard" onclick="showView('dashboard')">⌂<br>Inicio</button>
+ <button data-view="add" onclick="showView('add')">＋<br>Registrar</button>
+ <button data-view="history" onclick="showView('history')">▤<br>Historial</button>
+ <button data-view="settings" onclick="showView('settings')">⚙<br>Ajustes</button>
+</nav>
+<script>
+const KEY='miruta_records_v1', SKEY='miruta_settings_v1';
+const defaults={personal:0,installments:0,debt:0,saving:0,goal:0};
+let records=JSON.parse(localStorage.getItem(KEY)||'[]');
+let settings={...defaults,...JSON.parse(localStorage.getItem(SKEY)||'{}')};
+const $=id=>document.getElementById(id);
+const money=n=>new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0}).format(Number(n)||0);
+const num=id=>Number($(id).value)||0;
+const today=new Date(); const iso=d=>{let x=new Date(d.getTime()-d.getTimezoneOffset()*60000);return x.toISOString().slice(0,10)};
+$('todayLabel').textContent=today.toLocaleDateString('es-CO',{day:'numeric',month:'short',year:'numeric'});
+$('date').value=iso(today);
+function net(r){return r.gross-r.commission-r.fuel-r.other-r.parking}
+function showView(v){document.querySelectorAll('.view').forEach(x=>x.classList.toggle('active',x.id===v));document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('active',x.dataset.view===v));if(v==='dashboard')renderDashboard();if(v==='history')renderHistory();if(v==='settings')loadSettings();window.scrollTo(0,0)}
+function monthRecords(){let m=iso(today).slice(0,7);return records.filter(r=>r.date.startsWith(m))}
+function renderDashboard(){
+ let a=monthRecords(),sum=k=>a.reduce((s,r)=>s+(Number(r[k])||0),0),gross=sum('gross'),cost=sum('commission')+sum('fuel')+sum('other')+sum('parking'),hours=sum('hours'),km=sum('km'),n=gross-cost;
+ $('monthNet').textContent=money(n);$('monthGross').textContent=money(gross);$('monthCosts').textContent=money(cost);$('monthHours').textContent=hours.toLocaleString('es-CO')+' h';$('monthKm').textContent=km.toLocaleString('es-CO')+' km';
+ $('goalBar').style.width=settings.goal?Math.min(100,gross/settings.goal*100)+'%':'0%';$('goalText').textContent=settings.goal?money(gross)+' de '+money(settings.goal)+' de facturación':'Define tu meta mensual en Ajustes';
+ $('personal').textContent=money(settings.personal);$('debt').textContent=money(settings.installments);$('saving').textContent=money(settings.saving);$('totalDebt').textContent=money(settings.debt);
+}
+function updatePreview(){let v=num('gross')-num('commission')-num('fuel')-num('other')-num('parking');$('preview').textContent=money(v)}
+['gross','commission','fuel','other','parking'].forEach(id=>$(id).addEventListener('input',updatePreview));
+$('entryForm').addEventListener('submit',e=>{e.preventDefault();let r={id:Date.now(),date:$('date').value,hours:num('hours'),km:num('km'),gross:num('gross'),commission:num('commission'),fuel:num('fuel'),other:num('other'),parking:num('parking'),notes:$('notes').value.trim()};records.push(r);saveRecords();$('entryForm').reset();$('date').value=iso(new Date());$('commission').value=0;$('other').value=0;$('parking').value=0;updatePreview();showView('dashboard');alert('Jornada guardada. ¡Buen trabajo!')});
+function saveRecords(){localStorage.setItem(KEY,JSON.stringify(records))}
+function renderHistory(){let el=$('recordsList');if(!records.length){el.innerHTML='<div class="empty">Todavía no tienes jornadas registradas.<br>Usa “Registrar” para comenzar.</div>';return}
+ el.innerHTML=[...records].sort((a,b)=>b.date.localeCompare(a.date)).map(r=>`<div class="record"><div><strong>${new Date(r.date+'T12:00:00').toLocaleDateString('es-CO',{day:'numeric',month:'short',year:'numeric'})}</strong><div class="tag">${r.hours} h · ${r.km} km · Gasolina ${money(r.fuel)}</div>${r.notes?`<div class="tag">${escapeHTML(r.notes)}</div>`:''}</div><div class="right">${money(net(r))}<div class="tag">Neto</div><button class="danger" style="padding:5px 8px;margin-top:5px;font-size:11px" onclick="deleteRecord(${r.id})">Eliminar</button></div></div>`).join('');
+}
+function escapeHTML(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function deleteRecord(id){if(confirm('¿Eliminar esta jornada?')){records=records.filter(r=>r.id!==id);saveRecords();renderHistory();renderDashboard()}}
+function saveSettings(){settings={personal:num('sPersonal'),installments:num('sInstallments'),debt:num('sDebt'),saving:num('sSaving'),goal:num('sGoal')};localStorage.setItem(SKEY,JSON.stringify(settings));renderDashboard();alert('Ajustes guardados.')}
+function loadSettings(){ $('sPersonal').value=settings.personal;$('sInstallments').value=settings.installments;$('sDebt').value=settings.debt;$('sSaving').value=settings.saving;$('sGoal').value=settings.goal}
+function exportCSV(){let rows=[['Fecha','Horas','Km','Ingresos brutos','Comisión','Gasolina','Otros gastos','Peajes/parqueadero','Ganancia neta','Notas'],...records.map(r=>[r.date,r.hours,r.km,r.gross,r.commission,r.fuel,r.other,r.parking,net(r),r.notes])];let csv='\ufeff'+rows.map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(';')).join('\n');download(csv,'mi-ruta-registros.csv','text/csv;charset=utf-8')}
+function exportBackup(){download(JSON.stringify({records,settings},null,2),'mi-ruta-copia.json','application/json')}
+function download(data,name,type){let a=document.createElement('a'),url=URL.createObjectURL(new Blob([data],{type}));a.href=url;a.download=name;a.click();URL.revokeObjectURL(url)}
+$('restoreFile').addEventListener('change',async e=>{let f=e.target.files[0];if(!f)return;try{let d=JSON.parse(await f.text());if(!Array.isArray(d.records))throw 0;if(confirm('Esto reemplazará los registros actuales. ¿Continuar?')){records=d.records.map((r,i)=>({...r,id:Number(r.id)||Date.now()+i}));settings={...defaults,...(d.settings||{})};saveRecords();localStorage.setItem(SKEY,JSON.stringify(settings));renderHistory();renderDashboard();loadSettings();alert('Copia restaurada.')}}catch{alert('No se pudo leer esa copia.')}e.target.value=''});
+function clearAll(){if(confirm('¿Borrar definitivamente todos los registros guardados en este dispositivo? Exporta una copia antes si quieres conservarlos.')){records=[];saveRecords();renderDashboard();renderHistory();alert('Registros borrados.')}}
+loadSettings();renderDashboard();
+if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
+</script>
+</body></html>
